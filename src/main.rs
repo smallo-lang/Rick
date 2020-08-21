@@ -1,16 +1,10 @@
-use std::{env, process};
+use std::{env};
 
-mod rick;
+mod util;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() < 2 {
-        eprintln!("Error: source file not specified");
-        process::exit(1);
-    }
-
-    let src = &args[1];
-    let vm = rick::init(src);
-    vm.boot();
+    let args = env::args().collect();
+    let src = util::src(&args);
+    util::exit_on_err(&src);
+    println!("Executing {}...", src.unwrap());
 }
