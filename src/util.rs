@@ -12,9 +12,13 @@ pub fn src(args: &Vec<String>) -> Result<&String, &'static str> {
 
 pub fn exit_on_err<T>(res: &Result<T, &'static str>) {
     if let Err(err) = res {
-        println!("Error: {}", err);
-        process::exit(1);
+        exit_with_err(err);
     }
+}
+
+pub fn exit_with_err(err: &'static str) {
+    println!("Error: {}", err);
+    process::exit(1);
 }
 
 pub fn read_src_into_bytes(src: &String) -> Result<Vec<u8>, &'static str> {
@@ -29,6 +33,10 @@ pub fn read_src_into_bytes(src: &String) -> Result<Vec<u8>, &'static str> {
             }
         }
     }
+}
+
+pub fn watermark_ok(data: &Vec<u8>) -> bool {
+    data.starts_with("Rick".as_bytes())
 }
 
 #[cfg(test)]
@@ -72,7 +80,7 @@ mod read_src_into_bytes_tests {
 
     #[test]
     fn test_reads_file() {
-        let path = "/home/sharpvik/Projects/Rick/executables/nop.rk";
+        let path = "executables/nop.rk";
         let filename = String::from(path);
         if let Ok(data) = read_src_into_bytes(&filename) {
             let expect: Vec<u8> = String::from("Rick\0{}\0\0").into_bytes();
@@ -80,5 +88,22 @@ mod read_src_into_bytes_tests {
         } else {
             panic!("call should have returned Ok");
         }
+    }
+}
+
+#[cfg(test)]
+mod watermark_ok_tests {
+    use super::*;
+
+    #[test]
+    fn test_fails_on_invalid_watermark() {
+        let data = "Rock\0{}\0\0".as_bytes().to_vec();
+        assert!(!watermark_ok(&data));
+    }
+
+    #[test]
+    fn test_works_on_valid_watermark() {
+        let data = "Rick\0{}\0\0".as_bytes().to_vec();
+        assert!(watermark_ok(&data));
     }
 }

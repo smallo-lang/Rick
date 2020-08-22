@@ -10,4 +10,11 @@ fn main() {
     let src = src.unwrap();
     let data = util::read_src_into_bytes(&src);
     util::exit_on_err(&data);
+
+    let data = data.unwrap();
+    if !util::watermark_ok(&data) {
+        util::exit_with_err("watermark check failed");
+    }
+
+    println!("OK: executing {}...", src);
 }
