@@ -1,6 +1,7 @@
-use std::{env};
+use std::env;
 
 mod util;
+mod rick;
 
 fn main() {
     let args = env::args().collect();
@@ -11,10 +12,10 @@ fn main() {
     let data = util::read_src_into_bytes(&src);
     util::exit_on_err(&data);
 
-    let data = data.unwrap();
-    if !util::watermark_ok(&data) {
-        util::exit_with_err("watermark check failed");
-    }
+    let data: Vec<u8> = data.unwrap();
+    let vm = rick::new(&data);
+    util::exit_on_err(&vm);
 
-    println!("OK: executing {}...", src);
+    vm.unwrap().boot();
 }
+

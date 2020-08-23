@@ -35,10 +35,6 @@ pub fn read_src_into_bytes(src: &String) -> Result<Vec<u8>, &'static str> {
     }
 }
 
-pub fn watermark_ok(data: &Vec<u8>) -> bool {
-    data.starts_with("Rick".as_bytes())
-}
-
 #[cfg(test)]
 mod src_tests {
     use super::*;
@@ -83,27 +79,12 @@ mod read_src_into_bytes_tests {
         let path = "executables/nop.rk";
         let filename = String::from(path);
         if let Ok(data) = read_src_into_bytes(&filename) {
-            let expect: Vec<u8> = String::from("Rick\0{}\0\0").into_bytes();
+            let expect: Vec<u8> = String::from("Rick\0[\"hello world\"]\0\0")
+                .into_bytes();
             assert_eq!(expect, data);
         } else {
-            panic!("call should have returned Ok");
+            panic!("expected Err");
         }
     }
 }
 
-#[cfg(test)]
-mod watermark_ok_tests {
-    use super::*;
-
-    #[test]
-    fn test_fails_on_invalid_watermark() {
-        let data = "Rock\0{}\0\0".as_bytes().to_vec();
-        assert!(!watermark_ok(&data));
-    }
-
-    #[test]
-    fn test_works_on_valid_watermark() {
-        let data = "Rick\0{}\0\0".as_bytes().to_vec();
-        assert!(watermark_ok(&data));
-    }
-}
