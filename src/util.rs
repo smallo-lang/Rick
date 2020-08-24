@@ -2,7 +2,9 @@ use std::process;
 use std::io::prelude::*;
 use std::fs::File;
 
-pub fn src(args: &Vec<String>) -> Result<&String, &'static str> {
+pub type TResult<T> = Result<T, &'static str>;
+
+pub fn src(args: &Vec<String>) -> TResult<&String> {
     match args.len() {
         1 => Err("source file name not specified"),
         2 => Ok(&args[1]),
@@ -10,7 +12,7 @@ pub fn src(args: &Vec<String>) -> Result<&String, &'static str> {
     }
 }
 
-pub fn exit_on_err<T>(res: &Result<T, &'static str>) {
+pub fn exit_on_err<T>(res: &TResult<T>) {
     if let Err(err) = res {
         exit_with_err(err);
     }
@@ -21,7 +23,7 @@ pub fn exit_with_err(err: &'static str) {
     process::exit(1);
 }
 
-pub fn read_src_into_bytes(src: &String) -> Result<Vec<u8>, &'static str> {
+pub fn read_src_into_bytes(src: &String) -> TResult<Vec<u8>> {
     let file = File::open(src);
     match file {
         Err(_) => Err("failed to open executable"),

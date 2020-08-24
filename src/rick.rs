@@ -2,6 +2,8 @@ extern crate serde_json;
 use serde_json as sj;
 use serde_json::Value;
 
+use crate::util::TResult;
+
 #[derive(Debug, PartialEq)]
 enum Obj {
     Int(i64),
@@ -13,7 +15,7 @@ pub struct VM {
     instructions: Vec<u8>,
 }
 
-pub fn new(data: &Vec<u8>) -> Result<VM, &'static str> {
+pub fn new(data: &Vec<u8>) -> TResult<VM> {
     if !watermark_ok(data) {
         return Err("watermark check failed");
     }
@@ -28,7 +30,7 @@ fn watermark_ok(data: &Vec<u8>) -> bool {
     data.starts_with("Rick\0".as_bytes())
 }
 
-fn read_mem(data: &Vec<u8>) -> Result<Vec<Obj>, &'static str> {
+fn read_mem(data: &Vec<u8>) -> TResult<Vec<Obj>> {
     // As per specification, watermark "Rick\0" is 5 bytes long, therefore,
     // we start reading JSON mem data at index 5.
     let mut end: usize = 5;
@@ -43,7 +45,7 @@ fn read_mem(data: &Vec<u8>) -> Result<Vec<Obj>, &'static str> {
     }
 }
 
-fn json_into_obj(json_vals: Vec<Value>) -> Result<Vec<Obj>, &'static str> {
+fn json_into_obj(json_vals: Vec<Value>) -> TResult<Vec<Obj>> {
     let mut obj_vals: Vec<Obj> = Vec::new();
 
     for val in json_vals.iter() {
@@ -54,7 +56,7 @@ fn json_into_obj(json_vals: Vec<Value>) -> Result<Vec<Obj>, &'static str> {
     Ok(obj_vals)
 }
 
-fn obj_type(json_val: &Value) -> Result<Obj, &'static str> {
+fn obj_type(json_val: &Value) -> TResult<Obj> {
     if json_val.is_null() {
         return Ok(Obj::Int(0));
     } else if json_val.is_number() {
@@ -68,7 +70,7 @@ fn obj_type(json_val: &Value) -> Result<Obj, &'static str> {
     Err("invalid JSON type used in memory")
 }
 
-fn read_instructions(data: &Vec<u8>) -> Result<Vec<u8>, &'static str> {
+fn read_instructions(data: &Vec<u8>) -> TResult<Vec<u8>> {
     let mut start: usize = 5;
     while data[start] != b'\0' {
         start += 1;

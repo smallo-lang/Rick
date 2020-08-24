@@ -12,7 +12,7 @@ fn main() {
     let data = util::read_src_into_bytes(&src);
     util::exit_on_err(&data);
 
-    let data: Vec<u8> = data.unwrap();
+    let data = data.unwrap();
     let vm = rick::new(&data);
     util::exit_on_err(&vm);
 
