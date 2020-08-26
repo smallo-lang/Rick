@@ -13,7 +13,7 @@ fn main() {
     util::exit_on_err(&data);
 
     let data = data.unwrap();
-    let vm = rick::new(&data);
+    let vm = rick::VM::new(&data);
     util::exit_on_err(&vm);
 
     vm.unwrap().boot();

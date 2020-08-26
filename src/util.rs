@@ -42,13 +42,13 @@ mod src_tests {
     use super::*;
 
     #[test]
-    fn test_fails_if_src_not_specified() {
+    fn fails_if_src_not_specified() {
         let args = vec![String::from("rick")];
         assert_eq!(Err("source file name not specified"), src(&args));
     }
 
     #[test]
-    fn test_fails_if_too_many_args() {
+    fn fails_if_too_many_args() {
         let args = vec![
             String::from("rick"),
             String::from("example.rk"),
@@ -58,7 +58,7 @@ mod src_tests {
     }
 
     #[test]
-    fn test_returns_proper_src() {
+    fn returns_proper_src() {
         let args = vec![String::from("rick"), String::from("example.rk")];
         assert_eq!(Ok(&args[1]), src(&args));
     }
@@ -69,7 +69,7 @@ mod read_src_into_bytes_tests {
     use super::*;
 
     #[test]
-    fn test_fails_if_file_not_found() {
+    fn fails_if_file_not_found() {
         let path = "/home/sharpvik/Projects/Rick/executables/non-found.rk";
         let filename = String::from(path);
         assert_eq!(
@@ -77,7 +77,7 @@ mod read_src_into_bytes_tests {
     }
 
     #[test]
-    fn test_reads_file() {
+    fn reads_file() {
         let path = "executables/nop.rk";
         let filename = String::from(path);
         if let Ok(data) = read_src_into_bytes(&filename) {
