@@ -57,6 +57,9 @@ con                 @ concatenate two top values from the the stack as strings
 jump                @ unconditional jump to code location on top of the stack
 jmpt                @ jump if true
 jmpf                @ jump if false
+br                  @ unconditional branch to code location
+brt                 @ branch if true
+brf                 @ branch if false
 back                @ return to previous branch point
 err                 @ exit program with exit code
 ```
@@ -68,6 +71,3 @@ err                 @ exit program with exit code
 |:------:|:---------------------------------------------|
 | id     | memory identifier (label, const or variable) |
 | @      | comment                                      |
-
-> The `val` represents constant literal (`#` or `$`) or variable identifier
-> (`var`). It's used in commands that support auto-conversion.
