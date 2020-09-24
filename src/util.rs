@@ -2,6 +2,9 @@ use std::process;
 use std::io::prelude::*;
 use std::fs::File;
 
+extern crate colored;
+use colored::*;
+
 pub type TResult<T> = Result<T, &'static str>;
 
 pub fn src(args: &Vec<String>) -> TResult<&String> {
@@ -19,7 +22,7 @@ pub fn exit_on_err<T>(res: &TResult<T>) {
 }
 
 pub fn exit_with_err(err: &'static str) {
-    println!("Error: {}", err);
+    println!("{}", format!("Error: {}", err).red());
     process::exit(1);
 }
 

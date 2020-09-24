@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub struct Stack<T> {
     items: Vec<T>,
 }

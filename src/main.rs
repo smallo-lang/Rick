@@ -1,5 +1,7 @@
 use std::env;
 
+#[macro_use] extern crate text_io;
+
 mod util;
 mod rick;
 
