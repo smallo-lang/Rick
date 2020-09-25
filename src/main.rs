@@ -3,7 +3,7 @@ use std::env;
 #[macro_use] extern crate text_io;
 
 mod util;
-mod rick;
+mod vm;
 
 fn main() {
     let args = env::args().collect();
@@ -15,7 +15,7 @@ fn main() {
     util::exit_on_err(&data);
 
     let data = data.unwrap();
-    let vm = rick::VM::new(&data);
+    let vm = vm::VM::new(&data);
     util::exit_on_err(&vm);
 
     vm.unwrap().boot();

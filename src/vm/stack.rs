@@ -39,7 +39,7 @@ impl<T> Stack<T> {
 }
 
 #[cfg(test)]
-mod tests {
+mod stack_tests {
     use super::*;
 
     #[test]

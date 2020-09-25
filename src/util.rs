@@ -46,14 +46,14 @@ mod src_tests {
 
     #[test]
     fn fails_if_src_not_specified() {
-        let args = vec![String::from("rick")];
+        let args = vec![String::from("vm")];
         assert_eq!(Err("source file name not specified"), src(&args));
     }
 
     #[test]
     fn fails_if_too_many_args() {
         let args = vec![
-            String::from("rick"),
+            String::from("vm"),
             String::from("example.rk"),
             String::from("extra"),
         ];
@@ -62,7 +62,7 @@ mod src_tests {
 
     #[test]
     fn returns_proper_src() {
-        let args = vec![String::from("rick"), String::from("example.rk")];
+        let args = vec![String::from("vm"), String::from("example.rk")];
         assert_eq!(Ok(&args[1]), src(&args));
     }
 }

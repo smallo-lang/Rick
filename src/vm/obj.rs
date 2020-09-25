@@ -14,3 +14,19 @@ impl fmt::Display for Obj {
         }
    }
 }
+
+impl Obj {
+    pub fn is_int(&self) -> bool {
+        match self {
+            Obj::Int(_) => true,
+            _ => false
+        }
+    }
+
+    pub fn as_int(&self) -> Option<i64> {
+        match self {
+            Obj::Int(i) => Some(*i),
+            _ => None
+        }
+    }
+}

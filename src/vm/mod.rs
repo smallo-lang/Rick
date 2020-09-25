@@ -3,7 +3,6 @@ use std::io::Write;
 use std::process;
 use std::convert::TryInto;
 
-
 extern crate colored;
 use colored::*;
 
@@ -13,17 +12,18 @@ mod stack;
 use stack::Stack;
 
 mod op;
+use op::INSTRUCTION_SET;
 
 mod obj;
 use obj::Obj;
 
 mod vm_util;
-use vm_util::*;
 
 pub struct VM {
     run: bool,
     err: bool,
     err_msg: String,
+
     mem: Vec<Obj>,
     instructions: Vec<u8>,
 
@@ -34,9 +34,12 @@ pub struct VM {
     stack: Stack<Obj>,
 }
 
+// Main methods.
+// These methods provide VM's basic functionality. Opcode execution is
+// impossible without these very important things.
 impl VM {
-    pub fn new(data: &Vec<u8>) -> TResult<Self> {
-        if !watermark_ok(data) {
+    pub fn new(bytecode: &Vec<u8>) -> TResult<Self> {
+        if !vm_util::watermark_ok(bytecode) {
             return Err("watermark check failed");
         }
 
@@ -44,42 +47,57 @@ impl VM {
             run: true,
             err: false,
             err_msg: String::from(""),
-            mem: read_mem(data)?,
-            instructions: read_instructions(data)?,
+            mem: vm_util::read_mem(bytecode)?,
+            instructions: vm_util::read_instructions(bytecode)?,
             ip: 0,
             opcode: 0,
             operand: 0,
             stack: Stack::new(),
         })
     }
-}
 
-struct InstructionData {
-    opcode_method: fn(&mut VM),
-    operand_offset: usize,
-}
-
-/// INSTRUCTION_SET contains opcode instruction data for each available opcode
-/// in the VM.
-const INSTRUCTION_SET: [InstructionData; 10] = [
-    InstructionData { opcode_method: VM::end, operand_offset: 0 },
-    InstructionData { opcode_method: VM::push, operand_offset: 4 },
-    InstructionData { opcode_method: VM::pop, operand_offset: 4 },
-    InstructionData { opcode_method: VM::drop, operand_offset: 0 },
-    InstructionData { opcode_method: VM::ini, operand_offset: 0 },
-    InstructionData { opcode_method: VM::ins, operand_offset: 0 },
-    InstructionData { opcode_method: VM::out, operand_offset: 0 },
-    InstructionData { opcode_method: VM::nl, operand_offset: 0 },
-    InstructionData { opcode_method: VM::sti, operand_offset: 0 },
-    InstructionData { opcode_method: VM::r#bool, operand_offset: 0 },
-];
-
-impl VM {
     pub fn boot(&mut self) {
         while self.run && !self.err {
             self.tick();
         }
         self.exit();
+    }
+
+    pub fn tick(&mut self) {
+        self.fetch();
+        if self.err {
+            return;
+        }
+        self.decode();
+        if self.err {
+            return;
+        }
+        self.execute();
+    }
+
+    pub fn fetch(&mut self) {
+        if self.ip_out_of_bounds() {
+            self.error("instruction pointer out of bounds");
+        } else {
+            self.opcode = self.instructions[self.ip];
+            self.ip += 1;
+        }
+    }
+
+    pub fn decode(&mut self) {
+        if self.opcode_is_unknown() {
+            self.error("unknown opcode");
+        } else {
+            self.decode_operand();
+        }
+    }
+
+    pub fn execute(&mut self) {
+        self.opcode_method()(self);
+    }
+
+    fn ip_out_of_bounds(&self) -> bool {
+        self.ip >= self.instructions.len()
     }
 
     fn opcode_is_unknown(&self) -> bool {
@@ -108,38 +126,7 @@ impl VM {
         self.err_msg = String::from(msg);
     }
 
-    pub fn tick(&mut self) {
-        self.fetch();
-        if self.err {
-            return;
-        }
-
-        self.decode();
-        if self.err {
-            return;
-        }
-
-        self.execute();
-        if self.err {
-            return;
-        }
-    }
-
-    pub fn fetch(&mut self) {
-        if self.ip >= self.instructions.len() {
-            self.error("instruction pointer out of bouds");
-        } else {
-            self.opcode = self.instructions[self.ip];
-            self.ip += 1;
-        }
-    }
-
-    pub fn decode(&mut self) {
-        if self.opcode_is_unknown() {
-            self.error("unknown opcode");
-            return;
-        }
-
+    fn decode_operand(&mut self) {
         let operand_offset = self.operand_offset();
         if operand_offset == 0 {
             return;
@@ -156,13 +143,54 @@ impl VM {
         self.ip = ip_with_offset;
     }
 
-    pub fn execute(&mut self) {
-        let method = self.opcode_method();
-        method(self);
+    fn binary_pop(&mut self) -> Option<(Obj, Obj)> {
+        let top_b = self.stack.pop();
+        let top_a = self.stack.pop();
+
+        if self.pop_is_empty(&top_b) || self.pop_is_empty(&top_a) {
+            return None;
+        }
+        Some((top_a.unwrap(), top_b.unwrap()))
     }
 
-    /* Opcode methods follow. */
+    fn pop_is_empty(&self, option: &Option<Obj>) -> bool {
+        if let None = option {
+            return true
+        }
+        false
+    }
 
+    fn two_obj_as_int(&self, a: &Obj, b: &Obj) -> Option<(i64, i64)> {
+        if !a.is_int() || !b.is_int() {
+            return None;
+        }
+        Some((a.as_int().unwrap(), b.as_int().unwrap()))
+    }
+
+    fn binary_int_op(&mut self, name: &'static str, op: fn(i64, i64) -> i64) {
+        let objects = self.binary_pop();
+        if let None = objects {
+            self.error(&format!("[{}] not enough values on the stack", name));
+            return;
+        }
+
+        let (obj_a, obj_b) = objects.unwrap();
+        let integers = self.two_obj_as_int(&obj_a, &obj_b);
+        if let None = integers {
+            self.error(&format!("[{}] type mismatch: {} & {}",
+                                name, obj_a, obj_b));
+            return;
+        }
+
+        let (a, b) = integers.unwrap();
+        self.stack.push(Obj::Int(op(a, b)));
+    }
+}
+
+// Opcode methods.
+// All opcode methods must be of type fn(&mut self) -> () since they are kept track
+// of by the op::Opcode struct which defines that type.
+impl VM {
     fn end(&mut self) {
         self.run = false;
     }
@@ -258,75 +286,25 @@ impl VM {
             Obj::Str(s) => self.stack.push(Obj::Int((s.len() != 0) as i64))
         }
     }
-}
 
-#[cfg(test)]
-mod watermark_ok_tests {
-    use super::*;
-
-    #[test]
-    fn fails_on_invalid_watermark() {
-        let data = "Rock\0{}\0\0".as_bytes().to_vec();
-        assert!(!watermark_ok(&data));
+    fn add(&mut self) {
+        self.binary_int_op("add", |a, b| a + b);
     }
 
-    #[test]
-    fn works_on_valid_watermark() {
-        let data = "Rick\0{}\0\0".as_bytes().to_vec();
-        assert!(watermark_ok(&data));
-    }
-}
-
-#[cfg(test)]
-mod read_mem_tests {
-    use super::*;
-
-    #[test]
-    fn fails_on_wrong_data_format() {
-        let data = "Rick\0{}\0\0".as_bytes().to_vec();
-        if let Ok(_) = read_mem(&data) {
-            panic!("expected Err");
-        }
+    fn sub(&mut self) {
+        self.binary_int_op("sub", |a, b| a - b);
     }
 
-    #[test]
-    fn fails_for_unexpected_values() {
-        let data = "Rick\0[[\"hello\", 32], 42]\0\0".as_bytes().to_vec();
-        if let Ok(_) = read_mem(&data) {
-            panic!("expected Err");
-        }
+    fn mul(&mut self) {
+        self.binary_int_op("mul", |a, b| a * b);
     }
 
-    #[test]
-    fn works_on_right_data() {
-        let data = "Rick\0[\"magic\", 42, null, true]\0\0".as_bytes().to_vec();
-        let mem = read_mem(&data);
-        match mem {
-            Err(_) => panic!("expected Ok"),
-            Ok(v) => assert_eq!(v, vec![
-                Obj::Str(String::from("magic")),
-                Obj::Int(42),
-                Obj::Int(0),
-                Obj::Int(1),
-            ]),
-        }
-    }
-}
-
-#[cfg(test)]
-mod read_instructions_tests {
-    use super::*;
-
-    #[test]
-    fn fails_with_no_instructions() {
-        let data = "Rick\0[]\0".as_bytes().to_vec();
-        assert_eq!(Err("empty instructions list"), read_instructions(&data));
+    fn div(&mut self) {
+        self.binary_int_op("div", |a, b| a / b);
     }
 
-    #[test]
-    fn works_with_good_instructions() {
-        let data = "Rick\0[]\0\0".as_bytes().to_vec();
-        assert_eq!(Ok("\0".as_bytes().to_vec()), read_instructions(&data));
+    fn r#mod(&mut self) {
+        self.binary_int_op("mod", |a, b| a % b);
     }
 }
 
@@ -358,7 +336,6 @@ mod vm_tests {
 mod opcode_tests {
     use super::*;
     use op::Op::*;
-    use op::op;
 
     #[test]
     fn push() {
@@ -366,8 +343,8 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: [42]
             b'[', b'4', b'2', b']', 0,
-            op(Push), 0, 0, 0, 0,
-            op(Push), 0, 0, 0, 1,
+            Push.op(), 0, 0, 0, 0,
+            Push.op(), 0, 0, 0, 1,
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -387,8 +364,8 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: [0]
             b'[', b'0', b']', 0,
-            op(Pop), 0, 0, 0, 0,
-            op(Pop), 0, 0, 0, 0,
+            Pop.op(), 0, 0, 0, 0,
+            Pop.op(), 0, 0, 0, 0,
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -409,8 +386,8 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: []
             b'[', b']', 0,
-            op(Drop),
-            op(Drop),
+            Drop.op(),
+            Drop.op(),
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -431,8 +408,8 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: []
             b'[', b']', 0,
-            op(Sti),
-            op(Sti),
+            Sti.op(),
+            Sti.op(),
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -454,11 +431,11 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: []
             b'[', b']', 0,
-            op(Bool),
-            op(Bool),
-            op(Bool),
-            op(Bool),
-            op(Bool),
+            Bool.op(),
+            Bool.op(),
+            Bool.op(),
+            Bool.op(),
+            Bool.op(),
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -485,5 +462,165 @@ mod opcode_tests {
 
         vm.tick();
         assert!(vm.err);
+    }
+
+    #[test]
+    fn add() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Add.op(),
+            Add.op(),
+            Add.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
+
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Int(40));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(42)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(40));
+        vm.tick();
+        assert!(vm.err);    // not enough elements for binary pop
+
+        vm.err = false;
+        vm.stack.push(Obj::Str(String::from("hello world")));
+        vm.tick();
+        assert!(vm.err);    // type mismatch
+    }
+
+    #[test]
+    fn sub() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Sub.op(),
+            Sub.op(),
+            Sub.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
+
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Int(44));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(42)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(40));
+        vm.tick();
+        assert!(vm.err);    // not enough elements for binary pop
+
+        vm.err = false;
+        vm.stack.push(Obj::Str(String::from("hello world")));
+        vm.tick();
+        assert!(vm.err);    // type mismatch
+    }
+
+    #[test]
+    fn mul() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Mul.op(),
+            Mul.op(),
+            Mul.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
+
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Int(21));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(42)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(40));
+        vm.tick();
+        assert!(vm.err);    // not enough elements for binary pop
+
+        vm.err = false;
+        vm.stack.push(Obj::Str(String::from("hello world")));
+        vm.tick();
+        assert!(vm.err);    // type mismatch
+    }
+
+    #[test]
+    fn div() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Div.op(),
+            Div.op(),
+            Div.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
+
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Int(84));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(42)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(40));
+        vm.tick();
+        assert!(vm.err);    // not enough elements for binary pop
+
+        vm.err = false;
+        vm.stack.push(Obj::Str(String::from("hello world")));
+        vm.tick();
+        assert!(vm.err);    // type mismatch
+    }
+
+    #[test]
+    fn r#mod() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Mod.op(),
+            Mod.op(),
+            Mod.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
+
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Int(84));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(40));
+        vm.tick();
+        assert!(vm.err);    // not enough elements for binary pop
+
+        vm.err = false;
+        vm.stack.push(Obj::Str(String::from("hello world")));
+        vm.tick();
+        assert!(vm.err);    // type mismatch
     }
 }
