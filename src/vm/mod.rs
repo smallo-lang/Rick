@@ -239,8 +239,8 @@ impl VM {
     }
 
     fn out(&mut self) {
-        match self.stack.peek() {
-            None => self.error("[out] peek attempt on an empty stack"),
+        match self.stack.pop() {
+            None => self.error("[out] pop attempt on an empty stack"),
             Some(obj) => print!("{}", obj)
         }
     }
