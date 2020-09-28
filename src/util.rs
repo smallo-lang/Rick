@@ -5,14 +5,18 @@ use std::fs::File;
 extern crate colored;
 use colored::*;
 
+extern crate argparse;
+use argparse::{ArgumentParser, Store};
+
 pub type TResult<T> = Result<T, &'static str>;
 
-pub fn src(args: &Vec<String>) -> TResult<&String> {
-    match args.len() {
-        1 => Err("source file name not specified"),
-        2 => Ok(&args[1]),
-        _ => Err("invalid number of command line arguments")
-    }
+pub fn args(src: &mut String) {
+    let mut ap = ArgumentParser::new();
+    ap.set_description("Execute SmallO bytecode");
+    ap.refer(src)
+        .add_argument("source", Store,
+                      "Path to SmallO assembly source code");
+    ap.parse_args_or_exit();
 }
 
 pub fn exit_on_err<T>(res: &TResult<T>) {
