@@ -1,0 +1,5 @@
+  out "Input your age: "
+  ini age
+  sub 2020 age year
+  out "You were born in "
+  outl year
