@@ -3,15 +3,33 @@
 Rick is a virtual machine written specifically for the [SmallO] programming
 language. It is fast and reliable.
 
-[SmallO]: https://github.com/sharpvik/SmallO
+[SmallO]: https://github.com/smallo-lang/
 
 
 
-## Type System
+## Installation
 
-SmallO supports two simple types: `integer` and `string` where `integer` also
-serves as `boolean`. The `string` type can be interpreted as `boolean` using its
-length (empty `string` gives `false`, non-empty one gives `true`).
+I am assuming that you came here to use *Rick*, right? It's simple:
+
+```bash
+# Install using Cargo.
+cargo install --path .
+
+# If you are on UNIX, Linux or MacOS, try installing
+# with the install bash script. It's simpler.
+./install.sh
+
+# Use it straight away!
+rick executables/year_of_birth.rk
+```
+
+
+
+## Family
+
+*Rick* has a family. There are different members, each with their own life.
+Talk to [Jerry](https://github.com/smallo-lang/Jerry) as he can give you a
+better overview of the household and how its members fit together.
 
 
 
@@ -71,3 +89,16 @@ err                 @ exit program with exit code
 |:------:|:---------------------------------------------|
 | id     | memory identifier (label, const or variable) |
 | @      | comment                                      |
+
+
+
+## License
+
+This project is licensed under the **Mozilla Public License Version 2.0** --
+see the [LICENSE](LICENSE) file for details.
+
+Please note that this project is distributred as is,
+**with absolutely no warranty of any kind** to those who are going to deploy
+and/or use it. None of the authors and contributors are responsible (liable)
+for **any damage**, including but not limited to, loss of sensitive data and
+machine malfunction.
