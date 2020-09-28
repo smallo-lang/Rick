@@ -15,10 +15,6 @@ I am assuming that you came here to use *Rick*, right? It's simple:
 # Install using Cargo.
 cargo install --path .
 
-# If you are on UNIX, Linux or MacOS, try installing
-# with the install bash script. It's simpler.
-./install.sh
-
 # Use it straight away!
 rick executables/year_of_birth.rk
 ```
