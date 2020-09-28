@@ -9,6 +9,8 @@ language. It is fast and reliable.
 
 ## Installation
 
+### Basics
+
 I am assuming that you came here to use *Rick*, right? It's simple:
 
 ```bash
@@ -18,6 +20,42 @@ cargo install --path .
 # Use it straight away!
 rick executables/year_of_birth.rk
 ```
+
+
+### Rust and Cargo
+
+Oh no! Installation failed because you don't have [Rust] and *Cargo* installed?
+Don't worry, follow [this link][Install] and install *Rust* using `rustup` as
+recommended by the site.
+
+[Rust]: https://www.rust-lang.org/
+[Install]: https://www.rust-lang.org/tools/install
+
+
+### Dependencies
+
+> Alright, I have Rust and Cargo installed now, but what about project
+> dependencies? Don't I have to install like a couple dozens of additional
+> packages to be able to build this thing?
+> &copy; Every Software Dev
+
+Actually, you don't. Cargo will take care of all dependencies.
+
+
+### Dealing With PATH
+
+Upon installation, *Rust* will display a warning like this:
+
+```bash
+warning: be sure to add `/home/username/.cargo/bin` to your PATH to be able to
+run the installed binaries
+```
+
+So yeah, you'll need to do just that. If you don't know what `PATH` is and how
+to work with it, here are a couple of useful links for you, my friend:
+
+- [What exactly is `PATH`](http://www.linfo.org/path_env_var.html)
+- [How to add to `PATH` on Windows 10](https://www.architectryan.com/2018/03/17/add-to-the-path-on-windows-10/)
 
 
 
