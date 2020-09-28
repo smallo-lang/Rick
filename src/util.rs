@@ -45,33 +45,6 @@ pub fn read_src_into_bytes(src: &String) -> TResult<Vec<u8>> {
 }
 
 #[cfg(test)]
-mod src_tests {
-    use super::*;
-
-    #[test]
-    fn fails_if_src_not_specified() {
-        let args = vec![String::from("vm")];
-        assert_eq!(Err("source file name not specified"), src(&args));
-    }
-
-    #[test]
-    fn fails_if_too_many_args() {
-        let args = vec![
-            String::from("vm"),
-            String::from("example.rk"),
-            String::from("extra"),
-        ];
-        assert_eq!(Err("invalid number of command line arguments"), src(&args));
-    }
-
-    #[test]
-    fn returns_proper_src() {
-        let args = vec![String::from("vm"), String::from("example.rk")];
-        assert_eq!(Ok(&args[1]), src(&args));
-    }
-}
-
-#[cfg(test)]
 mod read_src_into_bytes_tests {
     use super::*;
 
@@ -85,7 +58,7 @@ mod read_src_into_bytes_tests {
 
     #[test]
     fn reads_file() {
-        let path = "executables/nop.rk";
+        let path = "examples/exe/nop.rk";
         let filename = String::from(path);
         if let Ok(data) = read_src_into_bytes(&filename) {
             let expect: Vec<u8> = String::from("Rick\0[\"hello world\"]\0\0")

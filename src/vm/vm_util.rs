@@ -28,28 +28,13 @@ pub fn read_mem(bytecode: &Vec<u8>) -> TResult<Vec<Obj>> {
 }
 
 fn json_into_obj(json_vals: Vec<Value>) -> TResult<Vec<Obj>> {
-    let mut obj_vals: Vec<Obj> = Vec::new();
+    let mut objects: Vec<Obj> = Vec::new();
 
     for val in json_vals.iter() {
-        let conv = obj_type(val)?;
-        obj_vals.push(conv);
+        objects.push(Obj::from_json(val)?);
     }
 
-    Ok(obj_vals)
-}
-
-fn obj_type(json_val: &Value) -> TResult<Obj> {
-    if json_val.is_null() {
-        return Ok(Obj::Int(0));
-    } else if json_val.is_i64() {
-        return Ok(Obj::Int(json_val.as_i64().unwrap()));
-    } else if json_val.is_string() {
-        return Ok(Obj::Str(String::from(json_val.as_str().unwrap())));
-    } else if json_val.is_boolean() {
-        return Ok(if json_val.as_bool().unwrap() { Obj::Int(1) }
-                  else { Obj::Int(0) })
-    }
-    Err("invalid JSON type used in memory")
+    Ok(objects)
 }
 
 pub fn read_instructions(bytecode: &Vec<u8>) -> TResult<Vec<u8>> {
@@ -107,7 +92,7 @@ mod vm_util_tests {
             Ok(v) => assert_eq!(v, vec![
                 Obj::Str(String::from("magic")),
                 Obj::Int(42),
-                Obj::Int(0),
+                Obj::Null,
                 Obj::Int(1),
             ]),
         }

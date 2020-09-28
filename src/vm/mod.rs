@@ -266,7 +266,7 @@ impl VM {
                 Err(_) => self.error("[sti] failed to convert to int")
             }
         } else {
-            self.error("[sti] invalid stack top type (str expected)");
+            self.error("[sti] invalid stack top type (string expected)");
         }
     }
 
@@ -281,9 +281,9 @@ impl VM {
             return;
         }
 
-        match obj {
-            Obj::Int(i) => self.stack.push(Obj::Int((i != 0) as i64)),
-            Obj::Str(s) => self.stack.push(Obj::Int((s.len() != 0) as i64))
+        match obj.to_bool() {
+            Some(b) => self.stack.push(b),
+            None => self.error("[bool] attempt to convert null"),
         }
     }
 
