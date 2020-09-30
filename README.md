@@ -97,9 +97,9 @@ lth                 @ left less than right
 geq                 @ left greater than or equal to right
 leq                 @ left less than or equal to right
 
-not                 @ unary logical not
 and                 @ binary logical and
 or                  @ binary logical or
+not                 @ unary logical not
 
 eq                  @ left equal to right
 neq                 @ left not equal to right

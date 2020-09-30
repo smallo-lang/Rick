@@ -309,11 +309,17 @@ impl VM {
 
     fn gth(&mut self) { self.binary_int_op("gth", |a, b| (a > b) as i64); }
 
-    fn lth(&mut self) { self.binary_int_op("gth", |a, b| (a < b) as i64); }
+    fn lth(&mut self) { self.binary_int_op("lth", |a, b| (a < b) as i64); }
 
-    fn geq(&mut self) { self.binary_int_op("gth", |a, b| (a >= b) as i64); }
+    fn geq(&mut self) { self.binary_int_op("geq", |a, b| (a >= b) as i64); }
 
-    fn leq(&mut self) { self.binary_int_op("gth", |a, b| (a <= b) as i64); }
+    fn leq(&mut self) { self.binary_int_op("leq", |a, b| (a <= b) as i64); }
+
+    fn and(&mut self) { self.binary_int_op("and",
+                                           |a, b| (a != 0 && b != 0) as i64); }
+
+    fn or(&mut self) { self.binary_int_op("or",
+                                           |a, b| (a != 0 || b != 0) as i64); }
 }
 
 #[cfg(test)]
@@ -473,6 +479,8 @@ mod opcode_tests {
     }
 
     #[test]
+    // In this method we also run destructive tests against binary_int_op works. These tests will
+    // not be run in the rest of the binary operation tests.
     fn add() {
         let data: Vec<u8> = vec![
             b'R', b'i', b'c', b'k', 0,
@@ -525,15 +533,6 @@ mod opcode_tests {
         vm.stack.push(Obj::Int(2));
         vm.tick();
         assert_eq!(Some(Obj::Int(42)), vm.stack.pop());
-
-        vm.stack.push(Obj::Int(40));
-        vm.tick();
-        assert!(vm.err);    // not enough elements for binary pop
-
-        vm.err = false;
-        vm.stack.push(Obj::Str(String::from("hello world")));
-        vm.tick();
-        assert!(vm.err);    // type mismatch
     }
 
     #[test]
@@ -557,15 +556,6 @@ mod opcode_tests {
         vm.stack.push(Obj::Int(2));
         vm.tick();
         assert_eq!(Some(Obj::Int(42)), vm.stack.pop());
-
-        vm.stack.push(Obj::Int(40));
-        vm.tick();
-        assert!(vm.err);    // not enough elements for binary pop
-
-        vm.err = false;
-        vm.stack.push(Obj::Str(String::from("hello world")));
-        vm.tick();
-        assert!(vm.err);    // type mismatch
     }
 
     #[test]
@@ -589,15 +579,6 @@ mod opcode_tests {
         vm.stack.push(Obj::Int(2));
         vm.tick();
         assert_eq!(Some(Obj::Int(42)), vm.stack.pop());
-
-        vm.stack.push(Obj::Int(40));
-        vm.tick();
-        assert!(vm.err);    // not enough elements for binary pop
-
-        vm.err = false;
-        vm.stack.push(Obj::Str(String::from("hello world")));
-        vm.tick();
-        assert!(vm.err);    // type mismatch
     }
 
     #[test]
@@ -621,15 +602,6 @@ mod opcode_tests {
         vm.stack.push(Obj::Int(2));
         vm.tick();
         assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
-
-        vm.stack.push(Obj::Int(40));
-        vm.tick();
-        assert!(vm.err);    // not enough elements for binary pop
-
-        vm.err = false;
-        vm.stack.push(Obj::Str(String::from("hello world")));
-        vm.tick();
-        assert!(vm.err);    // type mismatch
     }
 
     #[test]
@@ -659,15 +631,6 @@ mod opcode_tests {
         vm.stack.push(Obj::Int(2));
         vm.tick();
         assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
-
-        vm.stack.push(Obj::Int(40));
-        vm.tick();
-        assert!(vm.err);    // not enough elements for binary pop
-
-        vm.err = false;
-        vm.stack.push(Obj::Str(String::from("hello world")));
-        vm.tick();
-        assert!(vm.err);    // type mismatch
     }
 
     #[test]
@@ -697,15 +660,6 @@ mod opcode_tests {
         vm.stack.push(Obj::Int(2));
         vm.tick();
         assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
-
-        vm.stack.push(Obj::Int(40));
-        vm.tick();
-        assert!(vm.err);    // not enough elements for binary pop
-
-        vm.err = false;
-        vm.stack.push(Obj::Str(String::from("hello world")));
-        vm.tick();
-        assert!(vm.err);    // type mismatch
     }
 
     #[test]
@@ -741,15 +695,6 @@ mod opcode_tests {
         vm.stack.push(Obj::Int(2));
         vm.tick();
         assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
-
-        vm.stack.push(Obj::Int(40));
-        vm.tick();
-        assert!(vm.err);    // not enough elements for binary pop
-
-        vm.err = false;
-        vm.stack.push(Obj::Str(String::from("hello world")));
-        vm.tick();
-        assert!(vm.err);    // type mismatch
     }
 
     #[test]
@@ -785,14 +730,83 @@ mod opcode_tests {
         vm.stack.push(Obj::Int(2));
         vm.tick();
         assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+    }
 
-        vm.stack.push(Obj::Int(40));
-        vm.tick();
-        assert!(vm.err);    // not enough elements for binary pop
+    #[test]
+    fn and() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Op::And.op(),
+            Op::And.op(),
+            Op::And.op(),
+            Op::And.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
 
-        vm.err = false;
-        vm.stack.push(Obj::Str(String::from("hello world")));
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Int(0));
+        vm.stack.push(Obj::Int(0));
         vm.tick();
-        assert!(vm.err);    // type mismatch
+        assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(0));
+        vm.stack.push(Obj::Int(1));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(1));
+        vm.stack.push(Obj::Int(0));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(1));
+        vm.stack.push(Obj::Int(1));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+    }
+
+    #[test]
+    fn or() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Op::Or.op(),
+            Op::Or.op(),
+            Op::Or.op(),
+            Op::Or.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
+
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Int(0));
+        vm.stack.push(Obj::Int(0));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(0));
+        vm.stack.push(Obj::Int(1));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(1));
+        vm.stack.push(Obj::Int(0));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(1));
+        vm.stack.push(Obj::Int(1));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
     }
 }
