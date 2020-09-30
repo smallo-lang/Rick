@@ -9,7 +9,7 @@ pub struct Opcode {
 
 /// INSTRUCTION_SET contains opcode instruction data for each available opcode
 /// in the VM.
-pub const INSTRUCTION_SET: [Opcode; 15] = [
+pub const INSTRUCTION_SET: [Opcode; 19] = [
     Opcode { opcode_method: VM::end, operand_offset: 0 },
     Opcode { opcode_method: VM::push, operand_offset: 4 },
     Opcode { opcode_method: VM::pop, operand_offset: 4 },
@@ -25,6 +25,10 @@ pub const INSTRUCTION_SET: [Opcode; 15] = [
     Opcode { opcode_method: VM::mul, operand_offset: 0 },
     Opcode { opcode_method: VM::div, operand_offset: 0 },
     Opcode { opcode_method: VM::r#mod, operand_offset: 0 },
+    Opcode { opcode_method: VM::gth, operand_offset: 0 },
+    Opcode { opcode_method: VM::lth, operand_offset: 0 },
+    Opcode { opcode_method: VM::geq, operand_offset: 0 },
+    Opcode { opcode_method: VM::leq, operand_offset: 0 },
 ];
 
 /// This C-like enum is used to create versatile opcode tests that don't need
@@ -45,6 +49,24 @@ pub enum Op {
     Mul,
     Div,
     Mod,
+    Gth,
+    Lth,
+    Geq,
+    Leq,
+    Not,
+    And,
+    Or,
+    Eq,
+    Neq,
+    Con,
+    Jum,
+    Jmpt,
+    Jmpf,
+    Br,
+    Brt,
+    Brf,
+    Bac,
+    Err,
 }
 
 impl Op {

@@ -306,6 +306,14 @@ impl VM {
     fn r#mod(&mut self) {
         self.binary_int_op("mod", |a, b| a % b);
     }
+
+    fn gth(&mut self) { self.binary_int_op("gth", |a, b| (a > b) as i64); }
+
+    fn lth(&mut self) { self.binary_int_op("gth", |a, b| (a < b) as i64); }
+
+    fn geq(&mut self) { self.binary_int_op("gth", |a, b| (a >= b) as i64); }
+
+    fn leq(&mut self) { self.binary_int_op("gth", |a, b| (a <= b) as i64); }
 }
 
 #[cfg(test)]
@@ -335,7 +343,7 @@ mod vm_tests {
 #[cfg(test)]
 mod opcode_tests {
     use super::*;
-    use op::Op::*;
+    use op::Op;
 
     #[test]
     fn push() {
@@ -343,8 +351,8 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: [42]
             b'[', b'4', b'2', b']', 0,
-            Push.op(), 0, 0, 0, 0,
-            Push.op(), 0, 0, 0, 1,
+            Op::Push.op(), 0, 0, 0, 0,
+            Op::Push.op(), 0, 0, 0, 1,
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -364,8 +372,8 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: [0]
             b'[', b'0', b']', 0,
-            Pop.op(), 0, 0, 0, 0,
-            Pop.op(), 0, 0, 0, 0,
+            Op::Pop.op(), 0, 0, 0, 0,
+            Op::Pop.op(), 0, 0, 0, 0,
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -386,8 +394,8 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: []
             b'[', b']', 0,
-            Drop.op(),
-            Drop.op(),
+            Op::Drop.op(),
+            Op::Drop.op(),
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -408,8 +416,8 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: []
             b'[', b']', 0,
-            Sti.op(),
-            Sti.op(),
+            Op::Sti.op(),
+            Op::Sti.op(),
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -431,11 +439,11 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: []
             b'[', b']', 0,
-            Bool.op(),
-            Bool.op(),
-            Bool.op(),
-            Bool.op(),
-            Bool.op(),
+            Op::Bool.op(),
+            Op::Bool.op(),
+            Op::Bool.op(),
+            Op::Bool.op(),
+            Op::Bool.op(),
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -470,9 +478,9 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: []
             b'[', b']', 0,
-            Add.op(),
-            Add.op(),
-            Add.op(),
+            Op::Add.op(),
+            Op::Add.op(),
+            Op::Add.op(),
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -502,9 +510,9 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: []
             b'[', b']', 0,
-            Sub.op(),
-            Sub.op(),
-            Sub.op(),
+            Op::Sub.op(),
+            Op::Sub.op(),
+            Op::Sub.op(),
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -534,9 +542,9 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: []
             b'[', b']', 0,
-            Mul.op(),
-            Mul.op(),
-            Mul.op(),
+            Op::Mul.op(),
+            Op::Mul.op(),
+            Op::Mul.op(),
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -566,9 +574,9 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: []
             b'[', b']', 0,
-            Div.op(),
-            Div.op(),
-            Div.op(),
+            Op::Div.op(),
+            Op::Div.op(),
+            Op::Div.op(),
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -598,9 +606,9 @@ mod opcode_tests {
             b'R', b'i', b'c', b'k', 0,
             // mem: []
             b'[', b']', 0,
-            Mod.op(),
-            Mod.op(),
-            Mod.op(),
+            Op::Mod.op(),
+            Op::Mod.op(),
+            Op::Mod.op(),
         ];
         let vm = VM::new(&data);
         if let Err(_) = vm {
@@ -613,6 +621,170 @@ mod opcode_tests {
         vm.stack.push(Obj::Int(2));
         vm.tick();
         assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(40));
+        vm.tick();
+        assert!(vm.err);    // not enough elements for binary pop
+
+        vm.err = false;
+        vm.stack.push(Obj::Str(String::from("hello world")));
+        vm.tick();
+        assert!(vm.err);    // type mismatch
+    }
+
+    #[test]
+    fn gth() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Op::Gth.op(),
+            Op::Gth.op(),
+            Op::Gth.op(),
+            Op::Gth.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
+
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Int(84));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(0));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(40));
+        vm.tick();
+        assert!(vm.err);    // not enough elements for binary pop
+
+        vm.err = false;
+        vm.stack.push(Obj::Str(String::from("hello world")));
+        vm.tick();
+        assert!(vm.err);    // type mismatch
+    }
+
+    #[test]
+    fn lth() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Op::Lth.op(),
+            Op::Lth.op(),
+            Op::Lth.op(),
+            Op::Lth.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
+
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Int(84));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(0));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(40));
+        vm.tick();
+        assert!(vm.err);    // not enough elements for binary pop
+
+        vm.err = false;
+        vm.stack.push(Obj::Str(String::from("hello world")));
+        vm.tick();
+        assert!(vm.err);    // type mismatch
+    }
+
+    #[test]
+    fn geq() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Op::Geq.op(),
+            Op::Geq.op(),
+            Op::Geq.op(),
+            Op::Geq.op(),
+            Op::Geq.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
+
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Int(84));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(2));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(0));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(40));
+        vm.tick();
+        assert!(vm.err);    // not enough elements for binary pop
+
+        vm.err = false;
+        vm.stack.push(Obj::Str(String::from("hello world")));
+        vm.tick();
+        assert!(vm.err);    // type mismatch
+    }
+
+    #[test]
+    fn leq() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Op::Leq.op(),
+            Op::Leq.op(),
+            Op::Leq.op(),
+            Op::Leq.op(),
+            Op::Leq.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
+
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Int(84));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(2));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(0));
+        vm.stack.push(Obj::Int(2));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
 
         vm.stack.push(Obj::Int(40));
         vm.tick();
