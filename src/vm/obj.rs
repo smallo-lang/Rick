@@ -58,4 +58,12 @@ impl Obj {
             Obj::Null => None,
         }
     }
+
+    pub fn equal(&self, other: &Obj) -> bool {
+        match (self, other) {
+            (Obj::Int(i), Obj::Int(j)) => i == j,
+            (Obj::Str(s), Obj::Str(t)) => s == t,
+            _ => false,
+        }
+    }
 }

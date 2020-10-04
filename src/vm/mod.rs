@@ -320,6 +320,45 @@ impl VM {
 
     fn or(&mut self) { self.binary_int_op("or",
                                            |a, b| (a != 0 || b != 0) as i64); }
+
+    fn not(&mut self) {
+        let top = self.stack.pop();
+        if let None = top {
+            self.error(&format!("[not] not enough values on the stack"));
+            return;
+        }
+
+        let obj = top.unwrap();
+        match obj.as_int() {
+            None => {
+                self.error(&format!("[not] type mismatch: expected integer"));
+                return;
+            },
+            Some(i) => self.stack.push(Obj::Int(!(i != 0) as i64))
+        }
+    }
+
+    fn eq(&mut self) {
+        let objects = self.binary_pop();
+        if let None = objects {
+            self.error("[eq] not enough values on the stack");
+            return;
+        }
+
+        let (obj_a, obj_b) = objects.unwrap();
+        self.stack.push(Obj::Int(obj_a.equal(&obj_b) as i64));
+    }
+
+    fn neq(&mut self) {
+        let objects = self.binary_pop();
+        if let None = objects {
+            self.error("[eq] not enough values on the stack");
+            return;
+        }
+
+        let (obj_a, obj_b) = objects.unwrap();
+        self.stack.push(Obj::Int(!obj_a.equal(&obj_b) as i64));
+    }
 }
 
 #[cfg(test)]
@@ -808,5 +847,96 @@ mod opcode_tests {
         vm.stack.push(Obj::Int(1));
         vm.tick();
         assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+    }
+
+    #[test]
+    fn not() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Op::Not.op(),
+            Op::Not.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
+
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Int(0));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(1));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
+    }
+
+    #[test]
+    fn eq() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Op::Eq.op(),
+            Op::Eq.op(),
+            Op::Eq.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
+
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Str(String::from("let magic = ")));
+        vm.stack.push(Obj::Int(42));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
+
+        vm.stack.push(Obj::Str(String::from("hello world")));
+        vm.stack.push(Obj::Str(String::from("hello world")));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(5));
+        vm.stack.push(Obj::Int(5));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+    }
+
+    #[test]
+    fn neq() {
+        let data: Vec<u8> = vec![
+            b'R', b'i', b'c', b'k', 0,
+            // mem: []
+            b'[', b']', 0,
+            Op::Neq.op(),
+            Op::Neq.op(),
+            Op::Neq.op(),
+        ];
+        let vm = VM::new(&data);
+        if let Err(_) = vm {
+            panic!("expected Ok");
+        }
+
+        let mut vm = vm.unwrap();
+
+        vm.stack.push(Obj::Str(String::from("let magic = ")));
+        vm.stack.push(Obj::Int(42));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(1)), vm.stack.pop());
+
+        vm.stack.push(Obj::Str(String::from("hello world")));
+        vm.stack.push(Obj::Str(String::from("hello world")));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
+
+        vm.stack.push(Obj::Int(5));
+        vm.stack.push(Obj::Int(5));
+        vm.tick();
+        assert_eq!(Some(Obj::Int(0)), vm.stack.pop());
     }
 }
