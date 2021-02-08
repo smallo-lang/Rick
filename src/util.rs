@@ -58,7 +58,7 @@ mod read_src_into_bytes_tests {
 
     #[test]
     fn reads_file() {
-        let path = "examples/exe/nop.rk";
+        let path = "examples/bytecode/nop.rk";
         let filename = String::from(path);
         if let Ok(data) = read_src_into_bytes(&filename) {
             let expect: Vec<u8> = String::from("Rick\0[\"hello world\"]\0\0")
